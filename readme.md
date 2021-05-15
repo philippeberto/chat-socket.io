@@ -1,6 +1,6 @@
 # Chat with express + mondoDB + socket.io
 
-This is a simple chat example made with the technologies bellow
+This is a simple chat example made with the technologies bellow.
 
 * [Node.js](https://nodejs.org)
 * [express](https://expressjs.com/) 
