@@ -26,8 +26,8 @@ app.use(appSession)
 // o app e sim o http
 const http = require('http').Server(app)
 const io = require('socket.io')(http)
-// const redis = require('socket.io-redis') //redis work as a balancer between different servers
-// io.adapter(redis())
+const redis = require('socket.io-redis') //redis work as a balancer between different servers
+io.adapter(redis())
 io.use(sharedSession(appSession, { autoSave: true }))
 io.use((socket, next) => {
   const session = socket.handshake.session
