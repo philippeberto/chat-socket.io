@@ -1,5 +1,6 @@
 const express = require('express')
 const app = express()
+const cors = require('cors')
 const session = require('express-session')
 const sharedSession = require('express-socket.io-session')
 const mongoose = require('mongoose')
@@ -7,10 +8,17 @@ mongoose.Promise = global.Promise
 const Room = require('./models/room')
 const Message = require('./models/message')
 require('dotenv').config()
+const jwt = require('jsonwebtoken')
 const PORT = process.env.PORT || 3000
+const jwt_secret = process.env.JWT_SECRET || 'chat-socket.io'
+
+app.use(cors())
+app.options('*', cors())
 
 app.use(express.static('public'))
 app.use(express.urlencoded({ extended: true }))
+app.use(express.json())
+
 const appSession = session({
   saveUninitialized: false,
   resave: false,
@@ -29,15 +37,15 @@ const io = require('socket.io')(http)
 const redis = require('socket.io-redis') //redis work as a balancer between different servers
 io.adapter(redis())
 io.use(sharedSession(appSession, { autoSave: true }))
-io.use((socket, next) => {
-  const session = socket.handshake.session
-  if (!session.user) {
-    console.log('Authentication failed.')
+io.use(async (socket, next) => {
+  const verify = await jwt.verify(socket.handshake.query.token, jwt_secret)
+  if (!verify) {
     next(new Error('Authentication failed.'))
   } else {
     next()
   }
 })
+
 
 app.set('view engine', 'ejs')
 
@@ -45,11 +53,11 @@ app.get('/', (req, res) => {
   res.render('home')
 })
 
-app.post('/', (req, res) => {
-  req.session.user = {
+app.post('/auth', async (req, res) => {
+  const token = jwt.sign({
     name: req.body.name
-  }
-  res.redirect('/room')
+  }, jwt_secret)
+  res.send({ token })
 })
 
 app.get('/room', (req, res) => {
